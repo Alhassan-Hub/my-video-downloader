@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Allan's Downloader</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #000000; color: white; padding: 15px; margin: 0; }
+        .box { background-color: #1c1c1e; padding: 25px 20px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        h2 { margin-top: 0; font-size: 24px; font-weight: 700; margin-bottom: 0; }
+        
+        input[type="text"] { width: 100%; padding: 18px; border-radius: 12px; border: none; margin-top: 15px; margin-bottom: 15px; background-color: #2c2c2e; color: white; font-size: 18px; box-sizing: border-box; }
+        input[type="text"]::placeholder { color: #8e8e93; }
+
+        button { background-color: #0a84ff; color: white; border: none; padding: 18px; border-radius: 12px; font-size: 18px; font-weight: 700; width: 100%; cursor: pointer; }
+        button:active { background-color: #006ee6; }
+
+        .video-item { background-color: #2c2c2e; padding: 20px; margin: 15px 0; border-radius: 15px; text-align: left; }
+        
+        /* Button Styles */
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .save-btn { flex: 2; background-color: #30d158; text-decoration: none; color: white; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 16px; text-align: center; }
+        .delete-btn { flex: 1; background-color: #ff453a; text-decoration: none; color: white; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 16px; text-align: center; }
+        .clear-all-btn { color: #ff453a; text-decoration: none; font-size: 16px; font-weight: bold; padding: 5px 10px; background-color: rgba(255, 69, 58, 0.1); border-radius: 8px;}
+
+        /* Header layout for Gallery */
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+
+        .progress-bg { background-color: #3a3a3c; border-radius: 8px; width: 100%; height: 12px; margin-top: 10px; overflow: hidden; }
+        .progress-fill { background-color: #0a84ff; height: 100%; border-radius: 8px; transition: width 0.3s ease; }
+        .task-title { font-size: 16px; font-weight: 500; color: #aeaeb2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .status-text { font-size: 16px; font-weight: 700; color: #ff9f0a; margin-top: 8px; display: block;}
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <h2>📥 Add Link</h2>
+        <form action="/start_download" method="POST">
+            <input type="text" name="video_url" placeholder="Paste Twitter link here..." required>
+            <button type="submit">Download Video</button>
+        </form>
+    </div>
+
+    <!-- Active Downloads Section -->
+    <div class="box">
+        <h2>⏳ Active Downloads</h2>
+        {% set active_count = 0 %}
+        {% for task_id, task in tasks.items() %}
+            {% if task.status != 'Finished' and task.status != 'Failed' %}
+                <div class="video-item">
+                    <div class="task-title">{{ task.url }}</div>
+                    <span class="status-text">{{ task.status }} ({{ task.progress }})</span>
+                    <div class="progress-bg">
+                        <div class="progress-fill" style="width: {{ task.progress }};"></div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- My Gallery Section -->
+    <div class="box">
+        <div class="header-row">
+            <h2>📱 My Gallery</h2>
+            <a href="/clear_all" class="clear-all-btn">Clear All</a>
+        </div>
+        
+        {% for video in videos %}
+            <div class="video-item">
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 5px;">🎥 Video Ready</div>
+                <div style="font-size: 14px; color: #aeaeb2; margin-bottom: 10px;">ID: {{ video[:8] }}</div>
+                
+                <div class="btn-group">
+                    <a href="/download_to_safari/{{ video }}" class="save-btn">Save to Files</a>
+                    <a href="/delete/{{ video }}" class="delete-btn">Delete</a>
+                </div>
+            </div>
+        {% else %}
+            <p style="font-size: 16px; color: #8e8e93; text-align: center;">No finished videos yet.</p>
+        {% endfor %}
+    </div>
+
+    <script>
+        let hasActiveDownloads = false;
+    </script>
+    {% for task_id, task in tasks.items() %}
+        {% if task.status != 'Finished' and task.status != 'Failed' %}
+            <script> hasActiveDownloads = true; </script>
+        {% endif %}
+    {% endfor %}
+    <script>
+        if (hasActiveDownloads) {
+            setTimeout(() => { window.location.reload(); }, 1500);
+        }
+    </script>
+
+</body>
+</html>
