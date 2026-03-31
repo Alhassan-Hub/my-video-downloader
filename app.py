@@ -53,7 +53,6 @@ def background_download(url, task_id, quality):
                     active_tasks[task_id]["progress"] = d.get('_percent_str', '...').strip()
 
             # STRICT iOS FORMATTING FIX
-            # This forces an MP4 file that does NOT require ffmpeg to merge
             if quality == "low":
                 format_string = 'worst[ext=mp4]/worst'
             else:

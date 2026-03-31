@@ -34,8 +34,7 @@
         <form action="/start_download" method="POST">
             <input type="text" name="video_url" placeholder="Paste link here..." required>
             
-            <!-- NEW QUALITY SELECTOR -->
-            <select name="quality">
+            <select name="quality" id="qualitySelector">
                 <option value="high">High Quality</option>
                 <option value="low">Data Saver (Faster Download)</option>
             </select>
@@ -82,6 +81,7 @@
         {% endfor %}
     </div>
 
+    <!-- JavaScript for Auto-Refresh -->
     <script>
         let hasActiveDownloads = false;
     </script>
@@ -94,6 +94,21 @@
         if (hasActiveDownloads) {
             setTimeout(() => { window.location.reload(); }, 1500);
         }
+    </script>
+
+    <!-- NEW JavaScript: Remember the Quality Selection! -->
+    <script>
+        const selector = document.getElementById('qualitySelector');
+
+        // 1. Check if we saved a quality preference before, and apply it!
+        if (localStorage.getItem('savedQuality')) {
+            selector.value = localStorage.getItem('savedQuality');
+        }
+
+        // 2. Whenever you change the dropdown, save it to the iPhone's memory!
+        selector.addEventListener('change', function() {
+            localStorage.setItem('savedQuality', selector.value);
+        });
     </script>
 
 </body>
