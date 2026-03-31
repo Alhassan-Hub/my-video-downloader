@@ -11,11 +11,12 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 active_tasks = {}
 
-def background_download(url, task_id):
+def background_download(url, task_id, quality):
     active_tasks[task_id] = {"url": url, "status": "Starting...", "progress": "0%"}
     file_id = task_id
     
     try:
+        # --- TWITTER BYPASS ---
         if "twitter.com" in url or "x.com" in url:
             active_tasks[task_id]["status"] = "Connecting to Twitter..."
             api_url = url.replace("twitter.com", "api.vxtwitter.com").replace("x.com", "api.vxtwitter.com").split("?")[0]
@@ -25,6 +26,7 @@ def background_download(url, task_id):
                 direct_mp4_url = response['media_extended'][0]['url']
                 active_tasks[task_id]["status"] = "Downloading"
                 
+                # Stream the download
                 video_response = requests.get(direct_mp4_url, stream=True)
                 total_size = int(video_response.headers.get('content-length', 0))
                 
@@ -42,14 +44,23 @@ def background_download(url, task_id):
             else:
                 active_tasks[task_id]["status"] = "Failed: No video found"
                 return
+
+        # --- YOUTUBE / TIKTOK / OTHER ---
         else:
             active_tasks[task_id]["status"] = "Downloading"
             def my_hook(d):
                 if d['status'] == 'downloading':
                     active_tasks[task_id]["progress"] = d.get('_percent_str', '...').strip()
 
+            # STRICT iOS FORMATTING FIX
+            # This forces an MP4 file that does NOT require ffmpeg to merge
+            if quality == "low":
+                format_string = 'worst[ext=mp4]/worst'
+            else:
+                format_string = 'best[ext=mp4]/best'
+
             ydl_opts = {
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                'format': format_string,
                 'outtmpl': f'{DOWNLOAD_FOLDER}/{file_id}.%(ext)s',
                 'quiet': True,
                 'no_warnings': True,
@@ -72,16 +83,18 @@ def home():
 @app.route('/start_download', methods=['POST'])
 def start_download():
     url = request.form['video_url']
+    quality = request.form.get('quality', 'high') # Get quality from UI
+    
     task_id = str(uuid.uuid4())[:8]
-    thread = threading.Thread(target=background_download, args=(url, task_id))
+    thread = threading.Thread(target=background_download, args=(url, task_id, quality))
     thread.start()
     return redirect(url_for('home'))
 
 @app.route('/download_to_safari/<filename>')
 def download_to_safari(filename):
+    # This mimetype strongly forces iOS to recognize it as a playable video
     return send_file(f"{DOWNLOAD_FOLDER}/{filename}", as_attachment=True, mimetype='video/mp4')
 
-# --- NEW FEATURE: DELETE A SINGLE VIDEO ---
 @app.route('/delete/<filename>')
 def delete_file(filename):
     try:
@@ -90,7 +103,6 @@ def delete_file(filename):
         pass
     return redirect(url_for('home'))
 
-# --- NEW FEATURE: CLEAR ALL VIDEOS ---
 @app.route('/clear_all')
 def clear_all():
     files = os.listdir(DOWNLOAD_FOLDER)
@@ -100,7 +112,6 @@ def clear_all():
                 os.remove(os.path.join(DOWNLOAD_FOLDER, f))
             except:
                 pass
-    # Also clear the active tasks log so the screen is completely clean
     global active_tasks
     active_tasks = {}
     return redirect(url_for('home'))
